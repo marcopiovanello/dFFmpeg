@@ -1,1 +1,2 @@
 root: videos
+ffmpegPath: /usr/bin/ffmpeg

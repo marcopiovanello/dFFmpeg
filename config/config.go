@@ -8,7 +8,8 @@ import (
 )
 
 type config struct {
-	Root string `yaml:"root"`
+	Root       string `yaml:"root"`
+	FFMpegPath string `yaml:ffmpegPath`
 }
 
 var (

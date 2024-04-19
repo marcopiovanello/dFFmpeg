@@ -6,21 +6,19 @@ import (
 	"os/exec"
 )
 
-type FFMpegProcessor struct {
+type AV1Processor struct {
 	ffmpegPath  string
-	videoCodec  string
 	videoPreset string
 }
 
-func NewFFmpegProcessor(path, vcodec string) *FFMpegProcessor {
-	return &FFMpegProcessor{
+func NewAV1Processor(path, preset string) *AV1Processor {
+	return &AV1Processor{
 		ffmpegPath:  path,
-		videoCodec:  vcodec,
 		videoPreset: "6",
 	}
 }
 
-func (p *FFMpegProcessor) Process(ctx context.Context, input string) error {
+func (p *AV1Processor) Process(ctx context.Context, input string) error {
 	tempFile := "." + input
 
 	// Spawn a new ffmpeg process and convert a video to AV1-10bit with the SVT
@@ -30,7 +28,7 @@ func (p *FFMpegProcessor) Process(ctx context.Context, input string) error {
 		"-map", "0",
 		"-c:a", "copy",
 		"-c:s", "copy",
-		"-c:v", p.videoCodec,
+		"-c:v", "libsvtav1",
 		"-pix_fmt", "yuv420p10le",
 		"-crf", "22",
 		"preset", p.videoPreset,

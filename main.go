@@ -21,9 +21,10 @@ func main() {
 		panic(err)
 	}
 
-	ffmpegProcessor := processor.NewFFmpegProcessor("ffmpeg", "libsvtav1")
-
-	s := scheduler.NewRoundRobinScheduler(1, ffmpegProcessor)
+	var (
+		av1 = processor.NewAV1Processor(config.Instance().FFMpegPath, "6")
+		s   = scheduler.NewRoundRobinScheduler(1, av1)
+	)
 
 	for event := range watcher.C {
 		s.Schedule(scheduler.ConversionJob{
