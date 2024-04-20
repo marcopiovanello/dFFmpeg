@@ -1,2 +1,3 @@
-root: videos
-ffmpegPath: /usr/bin/ffmpeg
+root: videos/...
+ffmpegPath: /opt/homebrew/bin/ffmpeg
+releasePrefix: "[Erai-raws]"

@@ -1,70 +1,47 @@
 package processor
 
 import (
-	"bufio"
 	"context"
-	"log/slog"
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 )
 
-type AV1Processor struct {
-	ffmpegPath  string
-	videoPreset string
-	logger      *slog.Logger
+type HEVCQSVProcessor struct {
+	ffmpegPath string
+	cqp        int
 }
 
-func NewAV1Processor(path, preset string, logger *slog.Logger) *AV1Processor {
-	return &AV1Processor{
-		ffmpegPath:  path,
-		videoPreset: "6",
-		logger:      logger,
+func NewHEVCQSVProcessor(ffmpegPath string, cqp int) *HEVCQSVProcessor {
+	return &HEVCQSVProcessor{
+		ffmpegPath: ffmpegPath,
+		cqp:        cqp,
 	}
 }
 
-func (p *AV1Processor) Process(ctx context.Context, input string) error {
+func (p *HEVCQSVProcessor) Process(ctx context.Context, input string) error {
 	tempFile := path.Join(path.Dir(input), "."+path.Base(input))
+
+	cqpString := strconv.Itoa(p.cqp)
 
 	// Spawn a new ffmpeg process and convert a video to AV1-10bit with the SVT
 	// encoder, copying audio and subtitles streams.
 	cmd := exec.CommandContext(ctx, p.ffmpegPath,
+		"-init_hw_device",
+		"qsv=hw",
+		"-filter_hw_device", "hw",
+		"-pix_fmt", "p010le",
 		"-i", input,
+		"-vf", "'hwupload=extra_hw_frames=64,format=qsv'",
 		"-map", "0",
 		"-c:a", "copy",
 		"-c:s", "copy",
-		"-c:v", "libsvtav1",
-		"-pix_fmt", "yuv420p10le",
-		"-crf", "22",
-		"-preset", p.videoPreset,
+		"-c:v", "hevc_qsv",
+		"-profile:v", "main10",
+		"-q", cqpString,
 		tempFile,
 	)
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		scanner := bufio.NewScanner(stderr)
-
-		for scanner.Scan() {
-			p.logger.Error(scanner.Text())
-		}
-	}()
-
-	go func() {
-		scanner := bufio.NewScanner(stdout)
-
-		for scanner.Scan() {
-			p.logger.Info(scanner.Text())
-		}
-	}()
 
 	if err := cmd.Start(); err != nil {
 		return err

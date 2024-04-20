@@ -1,34 +1,63 @@
 package main
 
 import (
-	"context"
+	"io"
+	"log"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
 
-	"github.com/illarion/gonotify/v2"
 	"github.com/marcopeocchi/sanji/config"
+	"github.com/marcopeocchi/sanji/logging"
 	"github.com/marcopeocchi/sanji/processor"
 	"github.com/marcopeocchi/sanji/scheduler"
+	"github.com/rjeczalik/notify"
 )
 
 func main() {
 	config.LoadFile("config.yaml")
 
-	watcher, err := gonotify.NewDirWatcher(
-		context.Background(),
-		gonotify.IN_CLOSE_NOWRITE,
-		config.Instance().Root,
-	)
-	if err != nil {
-		panic(err)
+	logWriters := []io.Writer{
+		os.Stdout,
+		logging.NewObservableLogger(),
 	}
 
-	var (
-		av1 = processor.NewAV1Processor(config.Instance().FFMpegPath, "6")
-		s   = scheduler.NewRoundRobinScheduler(1, av1)
+	logger := slog.New(
+		slog.NewTextHandler(io.MultiWriter(logWriters...), &slog.HandlerOptions{}),
 	)
 
-	for event := range watcher.C {
-		s.Schedule(scheduler.ConversionJob{
-			InputFile: event.Name,
-		})
+	eventChan := make(chan notify.EventInfo, 1)
+
+	if err := notify.Watch(
+		config.Instance().Root,
+		eventChan,
+		notify.All,
+	); err != nil {
+		log.Fatal(err)
+	}
+
+	defer notify.Stop(eventChan)
+
+	var (
+		p = processor.NewFactory(processor.SVT_AV1, logger)
+		s = scheduler.NewRoundRobinScheduler(1, p, logger)
+	)
+
+	for event := range eventChan {
+		logger.Info(event.Event().String())
+
+		if event.Event() != notify.Write && event.Event() != notify.Rename {
+			continue
+		}
+
+		filename := filepath.Base(event.Path())
+
+		if strings.HasPrefix(filename, config.Instance().ReleasePrefix) &&
+			!strings.HasPrefix(filename, ".") {
+			s.Schedule(scheduler.ConversionJob{
+				InputFile: event.Path(),
+			})
+		}
 	}
 }
