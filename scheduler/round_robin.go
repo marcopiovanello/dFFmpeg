@@ -7,15 +7,15 @@ import (
 	"github.com/marcopeocchi/sanji/processor"
 )
 
-type RoundRobinScheduler struct {
+type RoundRobin struct {
 	concurrency int
 	pipeline    chan struct{}
 	proc        processor.VideoProcessor
 	logger      *slog.Logger
 }
 
-func NewRoundRobinScheduler(c int, p processor.VideoProcessor, l *slog.Logger) *RoundRobinScheduler {
-	return &RoundRobinScheduler{
+func NewRoundRobin(c int, p processor.VideoProcessor, l *slog.Logger) *RoundRobin {
+	return &RoundRobin{
 		concurrency: c,
 		pipeline:    make(chan struct{}, c),
 		proc:        p,
@@ -23,14 +23,13 @@ func NewRoundRobinScheduler(c int, p processor.VideoProcessor, l *slog.Logger) *
 	}
 }
 
-func (r *RoundRobinScheduler) Schedule(j ConversionJob) {
+func (r *RoundRobin) Schedule(ctx context.Context, j ConversionJob) {
 	go func() {
 		r.pipeline <- struct{}{}
 
 		r.logger.Info("starting", slog.String("file", j.InputFile))
 
-		err := r.proc.Process(context.Background(), j.InputFile)
-		if err != nil {
+		if err := r.proc.Process(ctx, j.InputFile); err != nil {
 			r.logger.Error(
 				"error while converting",
 				slog.String("file", j.InputFile),
@@ -40,4 +39,8 @@ func (r *RoundRobinScheduler) Schedule(j ConversionJob) {
 
 		<-r.pipeline
 	}()
+}
+
+func Pending(ctx context.Context) *[]ConversionJob {
+	return nil
 }

@@ -25,19 +25,17 @@ func (p *HEVCQSVProcessor) Process(ctx context.Context, input string) error {
 
 	cqpString := strconv.Itoa(p.cqp)
 
-	// Spawn a new ffmpeg process and convert a video to AV1-10bit with the SVT
+	// Spawn a new ffmpeg process and convert a video to HEVC-10bit with the QSV
 	// encoder, copying audio and subtitles streams.
 	cmd := exec.CommandContext(ctx, p.ffmpegPath,
-		"-init_hw_device",
-		"qsv=hw",
+		"-init_hw_device", "qsv=hw",
 		"-filter_hw_device", "hw",
-		"-pix_fmt", "p010le",
 		"-i", input,
-		"-vf", "'hwupload=extra_hw_frames=64,format=qsv'",
 		"-map", "0",
 		"-c:a", "copy",
 		"-c:s", "copy",
 		"-c:v", "hevc_qsv",
+		"-pix_fmt", "p010le",
 		"-profile:v", "main10",
 		"-q", cqpString,
 		tempFile,

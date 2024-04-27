@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"io"
 	"log"
 	"log/slog"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/marcopeocchi/sanji/config"
 	"github.com/marcopeocchi/sanji/logging"
@@ -15,8 +19,13 @@ import (
 	"github.com/rjeczalik/notify"
 )
 
+var configPath string
+
 func main() {
-	config.LoadFile("config.yaml")
+	flag.StringVar(&configPath, "c", "config.yaml", "full path of config file")
+	flag.Parse()
+
+	config.LoadFile(configPath)
 
 	logWriters := []io.Writer{
 		os.Stdout,
@@ -39,9 +48,16 @@ func main() {
 
 	defer notify.Stop(eventChan)
 
+	ctx, _ := signal.NotifyContext(context.Background(),
+		os.Interrupt,
+		os.Kill,
+		syscall.SIGTERM,
+		syscall.SIGKILL,
+	)
+
 	var (
 		p = processor.NewFactory(processor.SVT_AV1, logger)
-		s = scheduler.NewRoundRobinScheduler(1, p, logger)
+		s = scheduler.NewRoundRobin(1, p, logger)
 	)
 
 	for event := range eventChan {
@@ -55,7 +71,7 @@ func main() {
 
 		if strings.HasPrefix(filename, config.Instance().ReleasePrefix) &&
 			!strings.HasPrefix(filename, ".") {
-			s.Schedule(scheduler.ConversionJob{
+			s.Schedule(ctx, scheduler.ConversionJob{
 				InputFile: event.Path(),
 			})
 		}
