@@ -2,3 +2,5 @@ videos/*
 __debug*
 .DS_Store
 config.yaml
+*.mkv
+*.webm

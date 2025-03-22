@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package ffmpeg;
+
+option go_package = "internal/ffmpeg;pb";
+
+message PrepareConversionRequest {
+  string id = 1;
+  string filename = 2;
+  int32 processor = 3;
+  int32 quality = 4;
+  string additional_ffmpeg_params = 5;
+}
+
+message PrepareConversionResponse {
+  string id = 1;
+  int32 processor = 2;
+  string additional_ffmpeg_params = 3;
+  string temp_filename = 4;
+}
+
+message ConversionContent {
+  string id = 1;
+  bytes file_content = 2;
+}
+
+message ConversionResponse {
+  bytes ffmpeg_output = 1;
+  int32 elapsed_time = 2;
+}
+
+message Query {
+  string id = 1;
+}
+
+message Progress {
+  string id = 1;
+  string bit_rate = 2;
+  double ratio = 3;
+  int32 fps = 4;
+  int32 q = 5; 
+}
+
+service FFmpeg {
+  rpc PrepareConversion(PrepareConversionRequest) returns (PrepareConversionResponse);
+  rpc StartConversion(stream ConversionContent) returns (stream ConversionResponse);
+  rpc StopConversion(Query) returns (Query);
+  rpc GetProgress(Query) returns (stream Progress);
+}
