@@ -150,3 +150,15 @@ func (h *Handler) Details() http.HandlerFunc {
 		}
 	}
 }
+
+func (h *Handler) StopJob() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		w.Header().Set("Content-Type", "application/json")
+
+		id := chi.URLParam(r, "id")
+		h.orc.StopJob(r.Context(), id)
+
+		json.NewEncoder(w).Encode(id)
+	}
+}
