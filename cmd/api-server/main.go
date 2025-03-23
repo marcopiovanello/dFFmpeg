@@ -54,6 +54,7 @@ func main() {
 		r.Get("/aggregate", hand.Aggregate())
 		r.Post("/start", hand.StartJob())
 		r.Get("/stop/{id}", hand.StopJob())
+		r.Get("/running", hand.GetNodes())
 	})
 
 	server := &http.Server{

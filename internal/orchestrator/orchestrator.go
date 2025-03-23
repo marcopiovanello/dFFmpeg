@@ -12,4 +12,5 @@ type Orchestrator interface {
 	StopJob(ctx context.Context, id string) error
 	Aggregate(ctx context.Context) (<-chan *pb.Progress, error)
 	Details(ctx context.Context, id string) (<-chan *pb.Progress, error)
+	GetNodes(ctx context.Context) (*[]FFmpegJob, error)
 }

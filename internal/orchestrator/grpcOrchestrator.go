@@ -213,3 +213,26 @@ func (o *GrpcOrchestrator) Details(ctx context.Context, id string) (<-chan *pb.P
 
 	return progress, nil
 }
+
+// GetNodes implements Orchestrator.
+func (o *GrpcOrchestrator) GetNodes(ctx context.Context) (*[]FFmpegJob, error) {
+	tx := o.db.Txn(false)
+	it, err := tx.Get("jobs", "id")
+	if err != nil {
+		return nil, err
+	}
+
+	var jobs []FFmpegJob
+
+	for obj := it.Next(); obj != nil; obj = it.Next() {
+		job := obj.(*FFmpegJob)
+
+		jobs = append(jobs, FFmpegJob{
+			Id:               job.Id,
+			Node:             job.Node,
+			OriginalFilePath: job.OriginalFilePath,
+		})
+	}
+
+	return &jobs, nil
+}
