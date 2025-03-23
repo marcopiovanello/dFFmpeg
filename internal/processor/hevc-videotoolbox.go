@@ -14,21 +14,27 @@ import (
 )
 
 type HEVCVideoToolboxProcessor struct {
-	ffmpegPath string
-	quality    int
+	ffmpegPath    string
+	qualityPreset *QualityPreset
 }
 
-func NewHEVCVideoToolboxProcessor(path string, quality int) VideoProcessor {
+func NewHEVCVideoToolboxProcessor(path string, qp *QualityPreset) VideoProcessor {
+	if qp == nil {
+		qp = &QualityPreset{
+			Quality: 65,
+		}
+	}
+
 	return &HEVCVideoToolboxProcessor{
-		ffmpegPath: path,
-		quality:    quality,
+		ffmpegPath:    path,
+		qualityPreset: qp,
 	}
 }
 
 func (p *HEVCVideoToolboxProcessor) Process(ctx context.Context, input string) (<-chan []byte, error) {
 	ffmpegOutput := make(chan []byte)
 
-	if p.quality < 1 {
+	if p.qualityPreset.Quality < 1 {
 		return nil, errors.New("preset must be greater than zero")
 	}
 
@@ -42,7 +48,7 @@ func (p *HEVCVideoToolboxProcessor) Process(ctx context.Context, input string) (
 		"-c:a", "copy",
 		"-c:s", "copy",
 		"-c:v", "hevc_videotoolbox",
-		"-q:v", strconv.Itoa(p.quality),
+		"-q:v", strconv.Itoa(p.qualityPreset.Quality),
 		"-tag:v", "hvc1",
 		"-pix_fmt", "p010le",
 		tempFile,

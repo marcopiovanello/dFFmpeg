@@ -8,8 +8,10 @@ message PrepareConversionRequest {
   string id = 1;
   string filename = 2;
   int32 processor = 3;
-  int32 quality = 4;
-  string additional_ffmpeg_params = 5;
+  optional int32 crf = 4;
+  optional int32 preset = 5;
+  optional int32 quality = 6;
+  optional string additional_ffmpeg_params = 7;
 }
 
 message PrepareConversionResponse {

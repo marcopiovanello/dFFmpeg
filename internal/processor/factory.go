@@ -12,18 +12,18 @@ const (
 )
 
 // TODO: parametrize quality
-func NewFactory(profile Encoder, quality int) VideoProcessor {
+func NewFactory(profile Encoder, qp *QualityPreset) VideoProcessor {
 	ffmpeg := config.Instance().FFmpegPath
 
 	switch profile {
 	case SVT_AV1:
-		return NewAV1SVTProcessor(ffmpeg, quality) // 6
+		return NewAV1SVTProcessor(ffmpeg, qp) // 6
 	case RAV1E_AV1:
-		return NewRav1eAV1Processor(ffmpeg, quality) // 6
+		return NewRav1eAV1Processor(ffmpeg, qp) // 6
 	case HEVC_QSV:
-		return NewHEVCQSVProcessor(ffmpeg, quality) // 20
+		return NewHEVCQSVProcessor(ffmpeg, qp) // 20
 	case HEVC_VIDEOTOOLBOX:
-		return NewHEVCVideoToolboxProcessor(ffmpeg, quality) // 65
+		return NewHEVCVideoToolboxProcessor(ffmpeg, qp) // 65
 	default:
 		return nil
 	}

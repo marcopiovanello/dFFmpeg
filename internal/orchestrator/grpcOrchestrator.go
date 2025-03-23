@@ -82,15 +82,39 @@ func (o *GrpcOrchestrator) Aggregate(ctx context.Context) (<-chan *pb.Progress, 
 }
 
 // StartJob implements Orchestrator.
-func (o *GrpcOrchestrator) StartJob(ctx context.Context, path string, encoder processor.Encoder, quality int) (string, error) {
+func (o *GrpcOrchestrator) StartJob(
+	ctx context.Context,
+	path string,
+	encoder processor.Encoder,
+	qp *processor.QualityPreset,
+) (string, error) {
 	id := uuid.NewString()
+
+	var (
+		crf     *int32
+		preset  *int32
+		quality *int32
+	)
+
+	if qp != nil {
+		_crf := int32(qp.CRF)
+		crf = &_crf
+
+		_preset := int32(qp.Preset)
+		preset = &_preset
+
+		_quality := int32(qp.Quality)
+		quality = &_quality
+	}
 
 	res, err := o.client.PrepareConversion(context.Background(), &pb.PrepareConversionRequest{
 		Id:                     id,
 		Filename:               path,
 		Processor:              int32(encoder),
-		Quality:                int32(quality),
-		AdditionalFfmpegParams: "",
+		Quality:                quality,
+		Crf:                    crf,
+		Preset:                 preset,
+		AdditionalFfmpegParams: nil,
 	})
 	if err != nil {
 		return "", err

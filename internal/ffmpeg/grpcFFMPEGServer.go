@@ -44,18 +44,31 @@ func (f *FFmpegServer) PrepareConversion(ctx context.Context, req *pb.PrepareCon
 
 	log.Printf("prepared file %s\n", outFile)
 
+	qp := &processor.QualityPreset{}
+	if req.Crf != nil {
+		qp.CRF = int(*req.Crf)
+	}
+	if req.Preset != nil {
+		qp.Preset = int(*req.Preset)
+	}
+	if req.Quality != nil {
+		qp.Quality = int(*req.Quality)
+	}
+	if req.Quality == nil && req.Preset == nil && req.Crf == nil {
+		qp = nil // use default
+	}
+
 	f.prepared.Store(req.Id, Job{
 		Context:        context.Background(),
-		Processor:      processor.NewFactory(processor.Encoder(req.Processor), int(req.Quality)),
+		Processor:      processor.NewFactory(processor.Encoder(req.Processor), qp),
 		OutputFile:     outFile,
 		FileDescriptor: fd,
 	})
 
 	return &pb.PrepareConversionResponse{
-		Id:                     req.Id,
-		Processor:              req.Processor,
-		AdditionalFfmpegParams: req.AdditionalFfmpegParams,
-		TempFilename:           outFile,
+		Id:           req.Id,
+		Processor:    req.Processor,
+		TempFilename: outFile,
 	}, nil
 }
 

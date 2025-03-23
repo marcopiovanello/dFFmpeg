@@ -14,21 +14,29 @@ import (
 )
 
 type AV1SVTProcessor struct {
-	ffmpegPath  string
-	videoPreset int
+	ffmpegPath    string
+	qualityPreset *QualityPreset
 }
 
-func NewAV1SVTProcessor(path string, preset int) VideoProcessor {
+func NewAV1SVTProcessor(path string, qp *QualityPreset) VideoProcessor {
+	if qp == nil {
+		qp = &QualityPreset{
+			Preset:  6,
+			Quality: 5,
+			CRF:     22,
+		}
+	}
+
 	return &AV1SVTProcessor{
-		ffmpegPath:  path,
-		videoPreset: preset,
+		ffmpegPath:    path,
+		qualityPreset: qp,
 	}
 }
 
 func (p *AV1SVTProcessor) Process(ctx context.Context, input string) (<-chan []byte, error) {
 	ffmpegOutput := make(chan []byte)
 
-	if p.videoPreset < 1 {
+	if p.qualityPreset.Preset < 1 {
 		return nil, errors.New("preset must be greater than zero")
 	}
 
@@ -43,8 +51,8 @@ func (p *AV1SVTProcessor) Process(ctx context.Context, input string) (<-chan []b
 		"-c:s", "copy",
 		"-c:v", "libsvtav1",
 		"-pix_fmt", "yuv420p10le",
-		"-crf", "22",
-		"-preset", strconv.Itoa(p.videoPreset),
+		"-crf", strconv.Itoa(p.qualityPreset.CRF),
+		"-preset", strconv.Itoa(p.qualityPreset.Preset),
 		tempFile,
 	)
 

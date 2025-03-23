@@ -13,21 +13,27 @@ import (
 )
 
 type HEVCQSVProcessor struct {
-	ffmpegPath string
-	cqp        int
+	ffmpegPath    string
+	qualityPreset *QualityPreset
 }
 
-func NewHEVCQSVProcessor(ffmpegPath string, cqp int) VideoProcessor {
+func NewHEVCQSVProcessor(ffmpegPath string, qp *QualityPreset) VideoProcessor {
+	if qp == nil {
+		qp = &QualityPreset{
+			Quality: 60,
+		}
+	}
+
 	return &HEVCQSVProcessor{
-		ffmpegPath: ffmpegPath,
-		cqp:        cqp,
+		ffmpegPath:    ffmpegPath,
+		qualityPreset: qp,
 	}
 }
 
 func (p *HEVCQSVProcessor) Process(ctx context.Context, input string) (<-chan []byte, error) {
 	ffmpegOutput := make(chan []byte)
 
-	if p.cqp < 1 {
+	if p.qualityPreset.Quality < 1 {
 		return nil, errors.New("constant quality profile must be greater than zero")
 	}
 
@@ -45,7 +51,7 @@ func (p *HEVCQSVProcessor) Process(ctx context.Context, input string) (<-chan []
 		"-c:v", "hevc_qsv",
 		"-pix_fmt", "p010le",
 		"-profile:v", "main10",
-		"-q", strconv.Itoa(p.cqp),
+		"-q", strconv.Itoa(p.qualityPreset.Quality),
 		tempFile,
 	)
 

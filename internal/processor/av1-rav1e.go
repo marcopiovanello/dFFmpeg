@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os/exec"
 	"path/filepath"
@@ -14,21 +15,29 @@ import (
 )
 
 type AV1Rav1eProcessor struct {
-	ffmpegPath  string
-	videoPreset int
+	ffmpegPath string
+	qp         *QualityPreset
 }
 
-func NewRav1eAV1Processor(path string, preset int) VideoProcessor {
+func NewRav1eAV1Processor(path string, qp *QualityPreset) VideoProcessor {
+	if qp == nil {
+		qp = &QualityPreset{
+			Preset:  6,
+			Quality: 5,
+			CRF:     22,
+		}
+	}
+
 	return &AV1Rav1eProcessor{
-		ffmpegPath:  path,
-		videoPreset: preset,
+		ffmpegPath: path,
+		qp:         qp,
 	}
 }
 
 func (p *AV1Rav1eProcessor) Process(ctx context.Context, input string) (<-chan []byte, error) {
 	ffmpegOutput := make(chan []byte)
 
-	if p.videoPreset < 1 {
+	if p.qp.Preset < 1 {
 		return nil, errors.New("preset must be greater than zero")
 	}
 
@@ -43,8 +52,9 @@ func (p *AV1Rav1eProcessor) Process(ctx context.Context, input string) (<-chan [
 		"-c:s", "copy",
 		"-c:v", "librav1e",
 		"-pix_fmt", "yuv420p10le",
-		"-crf", "22",
-		"-preset", strconv.Itoa(p.videoPreset),
+		"-crf", strconv.Itoa(p.qp.CRF),
+		"-preset", strconv.Itoa(p.qp.Preset),
+		"-rav1e-params", fmt.Sprintf("speed=%d", p.qp.Quality),
 		tempFile,
 	)
 

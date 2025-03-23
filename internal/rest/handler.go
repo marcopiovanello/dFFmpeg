@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/marcopeocchi/sanji/internal/orchestrator"
+	"github.com/marcopeocchi/sanji/internal/processor"
 )
 
 type Handler struct {
@@ -23,9 +24,9 @@ func NewHandler(o orchestrator.Orchestrator) *Handler {
 }
 
 type StartJobRequest struct {
-	Path    string `json:"path"`
-	Encoder int    `json:"encoder"`
-	Quality int    `json:"quality"`
+	Path          string                   `json:"path"`
+	Encoder       int                      `json:"encoder"`
+	QualityPreset *processor.QualityPreset `json:"quality_preset,omitempty"`
 }
 
 func (h *Handler) StartJob() http.HandlerFunc {
@@ -39,7 +40,7 @@ func (h *Handler) StartJob() http.HandlerFunc {
 			return
 		}
 
-		id, err := h.orc.StartJob(context.Background(), req.Path, req.Encoder, req.Quality)
+		id, err := h.orc.StartJob(context.Background(), req.Path, req.Encoder, req.QualityPreset)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
